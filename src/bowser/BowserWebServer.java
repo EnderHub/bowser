@@ -84,16 +84,24 @@ public class BowserWebServer {
 
   private final CacheBuster cacheBuster;
 
+  // See: https://javadoc.io/doc/org.simpleframework/simple/latest/index.html
+  private int threadPoolSize;
+
   /**
    * If true, when a web socket gets disconnected, we will interrupt the thread which is processing that request.
    */
   public boolean interruptHandlerOnDisconnect = false;
 
   public BowserWebServer(String appName, int port, boolean enableCaching) {
+    this(appName, port, enableCaching, 8);
+  }
+
+  public BowserWebServer(String appName, int port, boolean enableCaching, int threadPoolSize) {
     this.port = port;
     this.enableCaching = enableCaching;
     this.staticContentHandler = new StaticContentHandler(this);
     this.cacheBuster = new CacheBuster(staticContentHandler);
+    this.threadPoolSize = threadPoolSize;
     head = Head.defaults(appName);
   }
 
@@ -373,7 +381,7 @@ public class BowserWebServer {
     }
 
     try {
-      Server server = new ContainerServer(container);
+      Server server = new ContainerServer(container, threadPoolSize);
       new SocketConnection(server).connect(new InetSocketAddress(port), sslContext);
     } catch (Exception e) {
       throw propagate(e);
